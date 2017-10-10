@@ -5,6 +5,7 @@
 var bcrypt = require('bcrypt-nodejs');
 
 var User   = require('../models/user');
+let JWT =require('../services/jwt');
 
 let pruebas = (req , res) => {
 
@@ -70,10 +71,38 @@ let saveUser = (req, res) => {
 let login = (req, res) => {
      let params = req.body;
      let email = params.email;
+     let password = params.password;
 
-     User.findOne()
-     res.status(200).send({message:'login method'});
-}
+     User.findOne({ email: email.toLowerCase()},( err, user) => {
+         if(err)
+         {
+             res.status(500).send({message:'Error al comprobar'});
+         }else{
+             if(user)
+             {
+                 bcrypt.compare(password,user.password,(err,check)=> {
+                     if(check)
+                     {
+                         if(params.gettoken)
+                         {
+                            res.status(200).send({toekn:JWT.createToken(user)});
+                         }else{
+                            res.status(200).send({message:user});
+                         }
+                     }else{
+                         res.status(500).send({message:"credenciales incorrectas"});
+
+                     }
+                 });
+             }else{
+                 res.status(404).send({message:"El usuario no existe"});
+             }
+         }
+
+     });
+ }
+
+
 
 module.exports = {
     pruebas,
