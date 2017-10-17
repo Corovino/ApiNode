@@ -3,6 +3,8 @@
 //modulos
 
 var bcrypt = require('bcrypt-nodejs');
+let fs = require('fs');
+
 
 var User   = require('../models/user');
 let JWT =require('../services/jwt');
@@ -10,7 +12,8 @@ let JWT =require('../services/jwt');
 let pruebas = (req , res) => {
 
     res.status(200).send({
-        message : 'soy un test de usuario :)'
+        message : 'soy un test de usuario :)',
+        user: req.user
     });
 }
 
@@ -103,9 +106,100 @@ let login = (req, res) => {
  }
 
 
+ let updateUser = (req, res) => {
+    let userId = req.params.id;
+    let update = req.body;
+    console.dir(update);
+
+    if(userId != req.user.sub)
+    {
+        res.status(500).send({message:'No tiene permisos para ejecutar la acción'});
+    }
+
+    User.findByIdAndUpdate(userId, update,{new:true}, (err, userUpdate) => {
+        if(err){
+            res.status(500).send({message: 'Error al actualizar el usuario'});
+        }else{
+            if(!userUpdate){
+                res.status(404).send({mesagge:'No se ha podido actualizar el usuario'});
+            }else{
+                res.status(200).send({user:userUpdate});
+            }
+        }
+    });
+ }
+
+ let uploadImage = (req, res) => {
+
+    let userId = req.params.id;
+    let file_name = 'No subido...';
+
+    if(req.file)
+    {
+        let file_path = req.files.image.path;
+        let file_split = file_path.split('\\');
+        let file_name = file_split[2];
+
+        let ext_split = file_name.split('\.');
+        let file_ext = ext_split[1];
+        if(file_ext === 'png' || file_ext === 'jpg' || file_ext === 'jpeg' || file_ext === 'gif')
+        {
+            if(userId != req.user.sub)
+            {
+                res.status(500).send({message:'No tiene permisos para ejecutar la acción'});
+            }
+
+            User.findByIdAndUpdate(userId, {image:file_name},{new:true}, (err, userUpdate) => {
+                if(err){
+                    res.status(500).send({message: 'Error al actualizar el usuario'});
+                }else{
+                    if(!userUpdate){
+                        res.status(404).send({mesagge:'No se ha podido actualizar el usuario'});
+                    }else{
+                        res.status(200).send({user:userUpdate, image: filename});
+                    }
+                }
+            });
+        }else{
+
+            fs.unlink(file_path, (err) => {
+               if(err)
+               {
+                   res.status(200).send({message:'Extension no valida y fichero no borrado'});
+               }else{
+                   res.status(200).send({message:'Extension no valida'});
+
+               }
+            });
+        }
+    }else{
+        res.status(404).send({message:'Archivo no encontrado'});
+    }
+
+ }
+
+
 
 module.exports = {
     pruebas,
     saveUser,
-    login
+    login,
+    updateUser,
+    uploadImage
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
