@@ -9,7 +9,7 @@ exports.ensureAuth = (req, res , next) => {
 
     if(!req.headers.authorization)
     {
-        res.status(403).send({message:'sin autorización'});
+        return  res.status(403).send({message:'sin autorización'});
     }
 
     let token = req.headers.authorization.replace(/['"]+/g,'');

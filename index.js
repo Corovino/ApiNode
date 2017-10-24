@@ -10,7 +10,7 @@ mongoose.connect('mongodb://localhost:27017/petfud',{ useMongoClient : true})
     .then( () => {
         console.log('Se conecto')
         app.listen(port, () => {
-            console.log("server runing...");
+            console.log("server runing in port ..."+port);
         });
     } )
     .catch( err => console.log(err));

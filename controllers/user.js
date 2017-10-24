@@ -2,12 +2,11 @@
 
 //modulos
 
-var bcrypt = require('bcrypt-nodejs');
-let fs = require('fs');
-
-
-var User   = require('../models/user');
-let JWT =require('../services/jwt');
+var bcrypt = require('bcrypt-nodejs'),
+    fs     = require("fs"),
+    path   = require('path'),
+    User  = require('../models/user'),
+    JWT   = require('../services/jwt');
 
 let pruebas = (req , res) => {
 
@@ -134,14 +133,16 @@ let login = (req, res) => {
     let userId = req.params.id;
     let file_name = 'No subido...';
 
-    if(req.file)
+
+    if(req.files)
     {
         let file_path = req.files.image.path;
-        let file_split = file_path.split('\\');
-        let file_name = file_split[2];
-
-        let ext_split = file_name.split('\.');
+        let file_split = file_path.split('/');
+        let filename = file_split[2];
+        let ext_split = filename.split('.');
         let file_ext = ext_split[1];
+
+
         if(file_ext === 'png' || file_ext === 'jpg' || file_ext === 'jpeg' || file_ext === 'gif')
         {
             if(userId != req.user.sub)
@@ -149,13 +150,14 @@ let login = (req, res) => {
                 res.status(500).send({message:'No tiene permisos para ejecutar la acción'});
             }
 
-            User.findByIdAndUpdate(userId, {image:file_name},{new:true}, (err, userUpdate) => {
+            User.findByIdAndUpdate(userId, {image:filename},{new:true}, (err, userUpdate) => {
                 if(err){
                     res.status(500).send({message: 'Error al actualizar el usuario'});
                 }else{
                     if(!userUpdate){
                         res.status(404).send({mesagge:'No se ha podido actualizar el usuario'});
                     }else{
+                        console.log("user:"+userUpdate);
                         res.status(200).send({user:userUpdate, image: filename});
                     }
                 }
@@ -163,29 +165,63 @@ let login = (req, res) => {
         }else{
 
             fs.unlink(file_path, (err) => {
-               if(err)
-               {
-                   res.status(200).send({message:'Extension no valida y fichero no borrado'});
-               }else{
-                   res.status(200).send({message:'Extension no valida'});
+                if (err) {
+                    res.status(500).send({message:'Formato invalido foto borrada'});
+                } else {
 
-               }
+                    res.status(500).send({message:'Formato invalido'});
+                }
             });
         }
     }else{
         res.status(404).send({message:'Archivo no encontrado'});
     }
 
+
  }
 
+ let getImageFile = (req, res) => {
 
+    let imageFile = req.params.images;
+    let path_file = './uploads/users/'+imageFile;
+
+    fs.exists(path_file, (exists) => {
+        console.log(exists);
+        if(exists)
+        {
+            res.sendFile(path.resolve(path_file));
+        }else{
+            res.status(404).send({message: 'la img no existe'});
+        }
+    });
+ }
+
+let getKeepers = (req,res) => {
+
+    User.find({role:'ROLE_ADMIN'}).exec((err,users)=>{
+        if(err)
+        {
+            res.status(500).send({mssage:'Error en la pticion'});
+        }else{
+            if(!users)
+            {
+                res.status(404).send({message:'No hay cuidadores'});
+            }else{
+                res.status(200).send({users});
+            }
+        }
+    });
+
+}
 
 module.exports = {
     pruebas,
     saveUser,
     login,
     updateUser,
-    uploadImage
+    uploadImage,
+    getImageFile,
+    getKeepers
 }
 
 
